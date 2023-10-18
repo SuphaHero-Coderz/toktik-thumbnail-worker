@@ -3,6 +3,7 @@ import logging
 import json
 import uuid
 import redis
+from moviepy.editor import VideoFileClip
 
 LOG = logging
 REDIS_QUEUE_LOCATION = os.getenv('REDIS_QUEUE', 'localhost')
@@ -42,33 +43,28 @@ def watch_queue(redis_conn, queue_name, callback_func, timeout=30):
                 callback_func(task)
 
 
-def execute_factor(log, task):
-    number = task.get('number')
-    if number:
-        number = int(number)
-        log.info('Factoring %d', number)
-        factors = [trial for trial in range(1, number + 1) if number % trial == 0]
-        log.info('Done, factors = %s', factors)
-    else:
-        log.info('No number given.')
+def execute_thumbnail(file_path: str):
+    clip = VideoFileClip(file_path)
+    clip.save_frame("thumbnail.jpg", t=1.00)
 
 
 def main():
-    LOG.info('Starting a worker...')
-    LOG.info('Unique name: %s', INSTANCE_NAME)
-    host, *port_info = REDIS_QUEUE_LOCATION.split(':')
-    port = tuple()
-    if port_info:
-        port, *_ = port_info
-        port = (int(port),)
-
-    named_logging = LOG.getLogger(name=INSTANCE_NAME)
-    named_logging.info('Trying to connect to %s [%s]', host, REDIS_QUEUE_LOCATION)
-    redis_conn = redis.Redis(host=host, *port)
-    watch_queue(
-        redis_conn,
-        QUEUE_NAME,
-        lambda task: named_logging.info('Task: %s', task))
+    execute_thumbnail()
+    # LOG.info('Starting a worker...')
+    # LOG.info('Unique name: %s', INSTANCE_NAME)
+    # host, *port_info = REDIS_QUEUE_LOCATION.split(':')
+    # port = tuple()
+    # if port_info:
+    #     port, *_ = port_info
+    #     port = (int(port),)
+    #
+    # named_logging = LOG.getLogger(name=INSTANCE_NAME)
+    # named_logging.info('Trying to connect to %s [%s]', host, REDIS_QUEUE_LOCATION)
+    # redis_conn = redis.Redis(host=host, *port)
+    # watch_queue(
+    #     redis_conn,
+    #     QUEUE_NAME,
+    #     execute_thumbnail)
 
 
 if __name__ == '__main__':
