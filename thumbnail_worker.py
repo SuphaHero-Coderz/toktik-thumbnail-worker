@@ -40,31 +40,32 @@ def watch_queue(redis_conn, queue_name, callback_func, timeout=30):
             except Exception:
                 LOG.exception('json.loads failed')
             if task:
-                callback_func(task)
+                callback_func(task["name"])
 
 
 def execute_thumbnail(file_path: str):
     clip = VideoFileClip(file_path)
-    clip.save_frame("thumbnail.jpg", t=1.00)
+    time = VideoFileClip(file_path).duration / 5
+    clip_name = clip.filename.split('.')[0]
+    clip.save_frame(f"{clip_name}.jpg", t=time)
 
 
 def main():
-    execute_thumbnail()
-    # LOG.info('Starting a worker...')
-    # LOG.info('Unique name: %s', INSTANCE_NAME)
-    # host, *port_info = REDIS_QUEUE_LOCATION.split(':')
-    # port = tuple()
-    # if port_info:
-    #     port, *_ = port_info
-    #     port = (int(port),)
-    #
-    # named_logging = LOG.getLogger(name=INSTANCE_NAME)
-    # named_logging.info('Trying to connect to %s [%s]', host, REDIS_QUEUE_LOCATION)
-    # redis_conn = redis.Redis(host=host, *port)
-    # watch_queue(
-    #     redis_conn,
-    #     QUEUE_NAME,
-    #     execute_thumbnail)
+    LOG.info('Starting a worker...')
+    LOG.info('Unique name: %s', INSTANCE_NAME)
+    host, *port_info = REDIS_QUEUE_LOCATION.split(':')
+    port = tuple()
+    if port_info:
+        port, *_ = port_info
+        port = (int(port),)
+
+    named_logging = LOG.getLogger(name=INSTANCE_NAME)
+    named_logging.info('Trying to connect to %s [%s]', host, REDIS_QUEUE_LOCATION)
+    redis_conn = redis.Redis(host=host, *port)
+    watch_queue(
+        redis_conn,
+        QUEUE_NAME,
+        execute_thumbnail)
 
 
 if __name__ == '__main__':

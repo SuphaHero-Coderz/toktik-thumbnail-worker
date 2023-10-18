@@ -8,9 +8,9 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
 
 # Copy everthing from . to /app inside the 'box'
-COPY encode_worker.py /app
-COPY sample.avi /app
+COPY thumbnail_worker.py /app
+COPY evagalion_op.mp4 /app
 WORKDIR /app
 
 # How to run it when we start up the box?
-CMD ["python", "./encode_worker.py"]
+CMD ["python", "./thumbnail_worker.py"]
