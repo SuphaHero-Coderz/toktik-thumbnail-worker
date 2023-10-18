@@ -39,8 +39,10 @@ def watch_queue(redis_conn, queue_name, callback_func, timeout=30):
                 task = json.loads(packed_task)
             except Exception:
                 LOG.exception('json.loads failed')
+                redis_conn.publish("thumbnail", "failed")
             if task:
                 callback_func(task["name"])
+                redis_conn.publish("thumbnail", "ok")
 
 
 def execute_thumbnail(file_path: str):
