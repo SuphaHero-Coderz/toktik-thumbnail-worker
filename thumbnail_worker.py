@@ -6,6 +6,7 @@ import redis
 from moviepy.editor import VideoFileClip
 
 LOG = logging
+# Credentials and Queue for listening
 REDIS_QUEUE_LOCATION = os.getenv('REDIS_QUEUE', 'localhost')
 QUEUE_NAME = 'queue:thumbnail'
 
@@ -16,7 +17,7 @@ LOG.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-
+# listen to queue and fetch work when arrive
 def watch_queue(redis_conn, queue_name, callback_func, timeout=30):
     active = True
 
@@ -45,6 +46,7 @@ def watch_queue(redis_conn, queue_name, callback_func, timeout=30):
                 redis_conn.publish("thumbnail", "ok")
 
 
+# thumbnail creation logic, capture a fram according to time and save if as a jpg
 def execute_thumbnail(file_path: str):
     clip = VideoFileClip(file_path)
     time = VideoFileClip(file_path).duration / 5
