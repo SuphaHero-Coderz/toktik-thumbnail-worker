@@ -1,2 +1,3 @@
 redis
 moviepy
+boto3

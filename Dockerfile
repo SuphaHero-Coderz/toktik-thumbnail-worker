@@ -9,7 +9,6 @@ RUN pip install -r /app/requirements.txt
 
 # Copy everthing from . to /app inside the 'box'
 COPY thumbnail_worker.py /app
-COPY evagalion_op.mp4 /app
 WORKDIR /app
 
 # How to run it when we start up the box?
