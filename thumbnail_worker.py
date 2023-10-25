@@ -89,6 +89,7 @@ def cleanup():
 
 # thumbnail creation logic, capture a fram according to time and save if as a jpg
 def execute_thumbnail(object_key: str):
+    # print("execute_thumbnail")
     download_video(object_key)
     generate_thumbnail(object_key)
     upload_thumbnail(object_key)
