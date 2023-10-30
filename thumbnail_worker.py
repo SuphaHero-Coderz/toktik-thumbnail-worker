@@ -14,6 +14,9 @@ QUEUE_NAME = 'queue:thumbnail'
 
 INSTANCE_NAME = uuid.uuid4().hex
 
+THUMBNAIL_NAME = "thumbnail.jpg"
+ENCODED_FILENAME = "encoded.mp4"
+
 LOG.basicConfig(
     level=LOG.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -26,6 +29,9 @@ s3 = boto3.client('s3',
 
 # listen to queue and fetch work when arrive
 def watch_queue(redis_conn, queue_name, callback_func, timeout=30):
+    """
+    Listens to queue `queue_name` and passes messages to `callback_func`
+    """
     active = True
 
     while active:
@@ -55,9 +61,12 @@ def watch_queue(redis_conn, queue_name, callback_func, timeout=30):
                 redis_conn.publish("thumbnail", json.dumps(data))
 
 def download_video(object_key: str):
+    """
+    Downloads the encoded mp4 file from S3.
+    """
     try:
         LOG.info("Downloading file from S3 for thumbnail generation")
-        s3.download_file(os.getenv("BUCKET_NAME"), f"{object_key}/encoded.mp4", "encoded.mp4")
+        s3.download_file(os.getenv("BUCKET_NAME"), f"{object_key}/{ENCODED_FILENAME}", "{ENCODED_FILENAME}")
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
             LOG.error("ERROR: file was not found on S3")
@@ -66,29 +75,43 @@ def download_video(object_key: str):
             raise
 
 def upload_thumbnail(object_key: str):
+    """
+    Uploads the generated thumbnail back to S3.
+    """
     LOG.info("Uploading converted video")
     try:
-        s3.upload_file(f"./thumbnail.jpg", os.getenv("BUCKET_NAME"), f"{object_key}/thumbnail.jpg")    
+        s3.upload_file(f"./{THUMBNAIL_NAME}", os.getenv("BUCKET_NAME"), f"{object_key}/{THUMBNAIL_NAME}")    
         LOG.info("Successfully uploaded converted video")
     except botocore.exceptions.ClientError as e:
         LOG.error(e)
 
 def generate_thumbnail(object_key: str):
-    clip = VideoFileClip("encoded.mp4")
+    """
+    Generates a thumbnail by capturing a frame at a fifth of the video's duration.
+    """
+    clip = VideoFileClip(ENCODED_FILENAME)
     time = clip.duration / 5
     clip_name = clip.filename.split('.')[0]
-    clip.save_frame("thumbnail.jpg", t=time)
+    clip.save_frame(THUMBNAIL_NAME, t=time)
 
 def cleanup():
-    try:
-        os.remove("./encoded.mp4")
-        os.remove("./thumbnail.jpg")
-        LOG.info("All files deleted successfully.")
-    except OSError:
-        LOG.error("Error occurred while deleting files.")
+    """
+    Deletes files involved in the thumbnail creation -- encoded video and thumbnail itself -- after uploading.
+    """
+    def delete_file(filepath: str):
+        try:
+            os.remove(filepath)
+            LOG.info(f"Successfully deleted file: {filepath}")
+        except OSError:
+            LOG.error(f"Error occurred while deleting file: {filepath}")
 
-# thumbnail creation logic, capture a fram according to time and save if as a jpg
+    delete_file(f"./{THUMBNAIL_NAME}")
+    delete_file(f"./{ENCODED_FILENAME}")
+
 def execute_thumbnail(object_key: str):
+    """
+    Main process for thumbnail generation.
+    """
     download_video(object_key)
     generate_thumbnail(object_key)
     upload_thumbnail(object_key)
