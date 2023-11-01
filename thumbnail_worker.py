@@ -6,6 +6,7 @@ import redis
 import boto3
 import botocore
 from moviepy.editor import VideoFileClip
+from tenacity import retry, stop_after_attempt
 
 LOG = logging
 # Credentials and Queue for listening
@@ -60,6 +61,7 @@ def watch_queue(redis_conn, queue_name, callback_func, timeout=30):
                 data = { "status" : "1", "message" : "Successfully generated thumbnails" }
                 redis_conn.publish("thumbnail", json.dumps(data))
 
+@retry(stop=stop_after_attempt(5))
 def download_video(object_key: str):
     """
     Downloads the encoded mp4 file from S3.
@@ -74,6 +76,7 @@ def download_video(object_key: str):
             LOG.error("ERROR: file download")
             raise
 
+@retry(stop=stop_after_attempt(5))
 def upload_thumbnail(object_key: str):
     """
     Uploads the generated thumbnail back to S3.
@@ -85,6 +88,7 @@ def upload_thumbnail(object_key: str):
     except botocore.exceptions.ClientError as e:
         LOG.error(e)
 
+@retry(stop=stop_after_attempt(5))
 def generate_thumbnail(object_key: str):
     """
     Generates a thumbnail by capturing a frame at a fifth of the video's duration.
@@ -98,6 +102,7 @@ def cleanup():
     """
     Deletes files involved in the thumbnail creation -- encoded video and thumbnail itself -- after uploading.
     """
+    @retry(stop=stop_after_attempt(5))
     def delete_file(filepath: str):
         try:
             os.remove(filepath)
