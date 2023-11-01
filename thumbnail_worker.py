@@ -66,7 +66,7 @@ def download_video(object_key: str):
     """
     try:
         LOG.info("Downloading file from S3 for thumbnail generation")
-        s3.download_file(os.getenv("BUCKET_NAME"), f"{object_key}/{ENCODED_FILENAME}", "{ENCODED_FILENAME}")
+        s3.download_file(os.getenv("BUCKET_NAME"), f"{object_key}/{ENCODED_FILENAME}", f"{ENCODED_FILENAME}")
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
             LOG.error("ERROR: file was not found on S3")
