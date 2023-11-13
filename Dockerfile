@@ -8,8 +8,7 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
 
 # Copy everthing from . to /app inside the 'box'
-COPY thumbnail_worker.py /app
-COPY .env /app
+COPY . /app
 WORKDIR /app
 
 # How to run it when we start up the box?
